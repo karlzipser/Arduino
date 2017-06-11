@@ -120,7 +120,7 @@ long unsigned int camera_command_time;
 
 Servo servo;
 Servo motor; 
-
+Servo camera;
 
 
 volatile float rate_1 = 0.0; // for encoder
