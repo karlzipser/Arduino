@@ -129,7 +129,8 @@ void setup()
   // is an open question. At 9600 baud rate, data can be missed.
   Serial.begin(115200);
   Serial.setTimeout(5);
-
+  
+  
   // Setting up three input pins
   pinMode(PIN_BUTTON_IN, INPUT_PULLUP);
   pinMode(PIN_SERVO_IN, INPUT_PULLUP);
