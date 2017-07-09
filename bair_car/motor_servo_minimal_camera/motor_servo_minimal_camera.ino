@@ -77,7 +77,7 @@ in the percent signals, whereas absolute values of the PWM can vary for various 
 // These go out to ESC (motor controller) and steer servo via black-red-white ribbons.
 #define PIN_SERVO_OUT 9
 #define PIN_MOTOR_OUT 8
-#define PIN_CAMERA_OUT 7
+#define PIN_CAMERA_OUT 2
 
 // On-board LED, used to signal error state
 #define PIN_LED_OUT 13
@@ -96,13 +96,12 @@ in the percent signals, whereas absolute values of the PWM can vary for various 
 volatile int button_pwm = 1210;
 volatile int servo_pwm = 0;
 volatile int motor_pwm = 0;
-volatile int camera_pwm = 0;
 volatile int servo_write_pwm = 0;
-volatile int motor_write_pwm = 0;
 volatile int camera_write_pwm = 0;
+volatile int motor_write_pwm = 0;
 int servo_command_pwm = 0;
-int motor_command_pwm = 0;
 int camera_command_pwm = 0;
+int motor_command_pwm = 0;
 int motor_null_pwm = 1500;
 int servo_null_pwm = 1400;
 int camera_null_pwm = 1400;
@@ -110,17 +109,16 @@ int camera_null_pwm = 1400;
 volatile unsigned long int button_prev_interrupt_time = 0;
 volatile unsigned long int servo_prev_interrupt_time  = 0;
 volatile unsigned long int motor_prev_interrupt_time  = 0;
-//volatile unsigned long int state_transition_time_ms = 0;
 
 int max_communication_delay = 100;
 
 long unsigned int servo_command_time;
-long unsigned int motor_command_time;
 long unsigned int camera_command_time;
+long unsigned int motor_command_time;
 
 Servo servo;
 Servo motor; 
-Servo camera;
+Servo camera; 
 
 
 volatile float rate_1 = 0.0; // for encoder
@@ -135,7 +133,8 @@ void setup()
   // is an open question. At 9600 baud rate, data can be missed.
   Serial.begin(115200);
   Serial.setTimeout(5);
-
+  
+  
   // Setting up three input pins
   pinMode(PIN_BUTTON_IN, INPUT_PULLUP);
   pinMode(PIN_SERVO_IN, INPUT_PULLUP);
@@ -156,7 +155,7 @@ void setup()
   servo.attach(PIN_SERVO_OUT); 
   motor.attach(PIN_MOTOR_OUT); 
   camera.attach(PIN_CAMERA_OUT); 
-
+  
   while(Serial.available() > 0) {
     char t = Serial.read();
   }
@@ -164,11 +163,12 @@ void setup()
   while(servo_pwm==0 || motor_pwm==0) {
     delay(200);
   }
+  
   servo_null_pwm = servo_pwm;
+  camera_null_pwm = servo_null_pwm;
   motor_null_pwm = motor_pwm;
-  camera_null_pwm = camera_pwm;
 
-  encoder_setup();
+  //encoder_setup();
 }
 
 
@@ -206,8 +206,20 @@ void servo_interrupt_service_routine(void) {
       servo_write_pwm = servo_null_pwm;
       servo.writeMicroseconds(servo_write_pwm);
     }
+    if(camera_command_pwm>0) {
+      camera_write_pwm = camera_command_pwm;
+      camera.writeMicroseconds(camera_write_pwm);
+    } else if(camera_null_pwm>0) {
+      camera_write_pwm = camera_null_pwm;
+      camera.writeMicroseconds(camera_write_pwm);
+    }
   } 
 }
+
+
+
+
+
 
 
 
@@ -234,33 +246,31 @@ void motor_interrupt_service_routine(void) {
 
 void loop() {
   
-  unsigned int A;
-  long unsigned int now;
-  now = millis();
-
-  for (int x = 0; x < 3; x++){
-    A = Serial.parseInt();
+  for(int x = 0; x < 3; x++) {
+    unsigned int A = Serial.parseInt();
+    long unsigned int now = millis();
     if (A>500 && A<3000) {
       servo_command_pwm = A;
       servo_command_time = now;
-    } else if (A>=10000 && A<20000) {
+    } else if (A>10500 && A<13000) {
       motor_command_pwm = A-10000;
       motor_command_time = now;
-    } else if (A>=20000 && A<30000) {
+    } else if (A>20500 && A<23000) {
       camera_command_pwm = A-20000;
       camera_command_time = now;
     }
   }
-  
-  if(now-servo_command_time > max_communication_delay || 
+  long unsigned int now = millis();
+  if(now-servo_command_time > max_communication_delay ||
     now-motor_command_time > max_communication_delay ||
-    now-motor_command_time > max_communication_delay) {
+    now-camera_command_time > max_communication_delay
+    ) {
     servo_command_pwm = 0;
     motor_command_pwm = 0;
     camera_command_pwm = 0;
   }
   
-  encoder_loop();
+  //encoder_loop(); 
 
   Serial.print("('mse',");
   Serial.print(button_pwm);
@@ -269,8 +279,12 @@ void loop() {
   Serial.print(",");
   Serial.print(motor_pwm);
   Serial.print(",");
-  Serial.print(camera_pwm);
+  /*
+  Serial.print(servo_write_pwm);
   Serial.print(",");
+  Serial.print(motor_write_pwm);
+  Serial.print(",");
+  */
   Serial.print(rate_1);
   Serial.println(")");
 
