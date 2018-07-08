@@ -194,10 +194,11 @@ long unsigned int start_time = millis();
 void loop() {
   if (millis() - start_time < 10000) {
     Serial.println("('GPS2',0,0,0,0,0,0,0,0,0.00000,0.00000,0.00,0.00,0.00,0)"); // dummy data
-    delay(100);
+    delay(100);   
   }
   unsigned int parsed_int = Serial.parseInt();
   if (parsed_int > 0) {
+      //Serial.println(parsed_int);
       int parsed_mode = parsed_int/10000;
       int parsed_val_1 = (parsed_int-parsed_mode*10000)/100;
       int parsed_val_2 = (parsed_int-parsed_val_1*100-parsed_mode*10000);
