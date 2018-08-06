@@ -39,10 +39,10 @@ void loop() {
 
   sensors_event_t event; 
   mma.getEvent(&event);
-  Serial.print("(acc,");
-  Serial.print(event.acceleration.x); Serial.print(",");
-  Serial.print(event.acceleration.y); Serial.print(",");
-  Serial.print(event.acceleration.z); Serial.print(")");
+  //Serial.print("(acc,");
+  //Serial.print(event.acceleration.x); Serial.print(",");
+  Serial.print(event.acceleration.y);// Serial.print(",");
+  //Serial.print(event.acceleration.z); Serial.print(")");
   Serial.println();
   delay(1000/100);
 

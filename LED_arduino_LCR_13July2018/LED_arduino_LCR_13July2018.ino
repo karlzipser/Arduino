@@ -42,6 +42,7 @@ const int LINE = 15;
 const int LINE_BUTTON_4 = 16;
 const int HUMAN = 17;
 const int NETWORK = 18;
+const int X = 19;
 
 static const uint8_t PROGMEM //type for bitmaps
 Calibrate_bmp[] =
@@ -335,7 +336,7 @@ void loop() {
       int blink =       (parsed_int-10000*orientation)/1000;
       int color =       (parsed_int-10000*orientation-1000*blink)/100;
       int symbol =      (parsed_int-10000*orientation-1000*blink-100*color)/1;
-
+    /*
     Serial.print(orientation);
     Serial.print(",");
     Serial.print(blink);
@@ -343,7 +344,7 @@ void loop() {
     Serial.print(color);
     Serial.print(",");
     Serial.println(symbol);
-    
+    */
 
 
     if (blink == BLINK_0) {
@@ -377,6 +378,8 @@ void loop() {
       matrix.drawBitmap(0, 0, human_bmp, 8, 8, led_color);
     } else if (symbol == NETWORK) {
       matrix.drawBitmap(0, 0, network_bmp, 8, 8, led_color);
+    } else if (symbol == X) {
+      matrix.drawBitmap(0, 0, X_bmp, 8, 8, led_color);
     } else if (symbol == DIRECT) {
         if (orientation == STRAIGHT) {
           matrix.drawBitmap(0, 0, direct_straight_bmp, 8, 8, led_color);
