@@ -2,22 +2,37 @@
 #include <Wire.h>
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_Sensor.h>
-#include "constants.h"
 
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
 
-int sensor_number = 0;
+int sensor_number = 3;
+int use_acc = 1;
 int use_gyro = 1;
 int use_headings = 0;
+//#define OUTPUT_TO_TX
+
+char* Accs[]={"acc", "ac1", "ac2","ac3","ac4"};
+char* Gyros[]={"gyro", "gyr1", "gyr2","gyr3","gyr4"};
+char* Heads[]={"head", "hed1", "hed2","hed3","hed4"};
+
+//void gyro_setup();
+//void gyro_loop();
+//void acc_loop();
+
+
 
 void setup()  
 {
   Serial.begin(115200);
+  
   if (use_gyro) gyro_setup();
-  if (! mma.begin()) {
-    while (1);
-  }
-  mma.setRange(MMA8451_RANGE_2_G);  
+
+  if (use_acc) {
+    if (! mma.begin()) {
+      while (1);
+    }
+    mma.setRange(MMA8451_RANGE_2_G);
+  } 
 }
 
 
@@ -30,37 +45,47 @@ float az = 0;
 float ctr = 0;
 
 uint32_t timer = millis();
+
 void loop() {
-  
+  if (use_acc) acc_loop_part1();
+  if (timer > millis())  timer = millis();
+  if (millis() - timer > 10) {
+    timer = millis();
+    if (use_acc) acc_loop_part2();
+    if (use_gyro) gyro_loop();
+  }
+}
+
+void acc_loop_part1() {
   sensors_event_t event; 
   mma.getEvent(&event);
   ax += event.acceleration.x;
   ay += event.acceleration.y;
   az += event.acceleration.z;
   ctr += 1;
-
-  if (timer > millis())  timer = millis();
-
-  if (millis() - timer > 10) {
-    timer = millis();
-    Serial.print("('acc',");
-    Serial.print(ax/ctr); Serial.print(",");
-    Serial.print(ay/ctr); Serial.print(",");
-    Serial.print(az/ctr);
-    if (sensor_number) {Serial.print(",");Serial.print(sensor_number);}
-    Serial.print(")");
-    Serial.println();
-    ax = 0;
-    ay = 0;
-    az = 0;
-    ctr = 0;
-    if (use_gyro) gyro_loop();
-  }
-
-
 }
 
-
+void acc_loop_part2() {
+  #ifdef OUTPUT_TO_TX
+  Serial.print("(");Serial.print(Accs[sensor_number]);Serial.print(",");
+  Serial.print(ax/ctr); Serial.print(",");
+  Serial.print(ay/ctr); Serial.print(",");
+  Serial.print(az/ctr);
+  Serial.print(")");
+  Serial.println();
+  #else
+  Serial.print(ax/ctr); Serial.print(" ");
+  Serial.print(ay/ctr); Serial.print(" ");
+  Serial.print(az/ctr);
+  if (use_gyro) Serial.print(" ");
+  else Serial.println();
+  #endif
+  
+  ax = 0;
+  ay = 0;
+  az = 0;
+  ctr = 0;
+}
 
 
 
@@ -105,16 +130,19 @@ void gyro_setup() {
 void gyro_loop() {
   updateGyroValues();
   if (use_headings) updateHeadings();
-  Serial.print("(");
-  Serial.print(STATE_GYRO);
-  Serial.print(",");
-  Serial.print(gyroDPS[0]);
-  Serial.print(",");
-  Serial.print(gyroDPS[1]);
-  Serial.print(",");
-  Serial.print(gyroDPS[2]);
-  if (sensor_number) {Serial.print(",");Serial.print(sensor_number);}
-  Serial.println(")");
+  #ifdef OUTPUT_TO_TX
+  Serial.print("(");Serial.print(Gyros[sensor_number]);Serial.print(",");
+  Serial.print(gyroDPS[0]);Serial.print(",");
+  Serial.print(gyroDPS[1]);Serial.print(",");
+  Serial.print(gyroDPS[2]);Serial.println(")");
+  #else
+  Serial.print(gyroDPS[0]/10.0);
+  Serial.print(" ");
+  Serial.print(gyroDPS[1]/10.0);
+  Serial.print(" ");
+  Serial.print(gyroDPS[2]/10.0);
+  Serial.println("");
+  #endif
   //printDPS();
   //Serial.print("   -->   ");
   if (use_headings) printHeadings2();
@@ -140,8 +168,7 @@ void printHeadings()
 }
 void printHeadings2()
 {
-  Serial.print("('head',");
-  Serial.print(heading[0]);
+  Serial.print("(");Serial.print(Heads[sensor_number]);Serial.print(",");
   Serial.print(',');
 
   Serial.print(heading[1]);
