@@ -1,48 +1,79 @@
-/******************************************************************************
-Flex_Sensor_Example.ino
-Example sketch for SparkFun's flex sensors
-  (https://www.sparkfun.com/products/10264)
-Jim Lindblom @ SparkFun Electronics
-April 28, 2016
+/* d *****************************************************************************
 
-Create a voltage divider circuit combining a flex sensor with a 47k resistor.
-- The resistor should connect from A0 to GND.
-- The flex sensor should connect from A0 to 3.3V
-As the resistance of the flex sensor increases (meaning it's being bent), the
-voltage at A0 should decrease.
+Based on:
+    Flex_Sensor_Example.ino
+    Example sketch for SparkFun's flex sensors
+      (https://www.sparkfun.com/products/10264)
+    Jim Lindblom @ SparkFun Electronics
+    April 28, 2016
 
-Development environment specifics:
-Arduino 1.6.7
+    Create a voltage divider circuit combining a flex sensor with a 47k resistor.
+    - The resistor should connect from A0 to GND.
+    - The flex sensor should connect from A0 to 3.3V
+    As the resistance of the flex sensor increases (meaning it's being bent), the
+    voltage at A0 should decrease.
+
+    Development environment specifics:
+    Arduino 1.6.7
 ******************************************************************************/
 
-//int flex_pins[] = {A11,A0,A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11};
-int flex_pins[] = {A6,A7,A8,A9,A10,A11};
-int num_pins = 6;
+char* Flexes[]={"xfl0","xfl1", "xfr0","xfr1", "xbl0","xbl1", "xbr0","xbr1"};
+
+float baselines[] = {0,0,0,0,0,0,0,0,0,0,0,0};
+
+//int flex_pins[] = {A0,A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11};
+int flex_pins[] = {A0,A1,A2,A3,A6,A7,A8,A9};
+//int flex_pins[] = {A6,A7,A8,A9,A10,A11};
+int num_pins = 8;
 const float VCC = 5.0; // Estimated voltage of Ardunio 5V line
 //const float R_DIV = 47500.0; // Measured resistance of 47k resistor
 const float R_DIV = 10000.0; // Estimated resistance of 10k resistor
+
+const int TAB_FORMAT = 0;
+
+
+
+float get_flexR(int pin)
+{
+  int flexADC;
+  float flexV;
+  float flexR;
+  flexADC = analogRead(flex_pins[pin]);
+  flexV = flexADC * VCC / 1023.0;
+  flexR = R_DIV * (VCC / flexV - 1.0);
+  return flexR;
+}
 
 void setup() 
 {
   Serial.begin(115200);
   for( int i = 0; i < num_pins; i = i + 1 ) {
-        pinMode(flex_pins[i], INPUT);;
-     }
+        pinMode(flex_pins[i], INPUT);
+    for( int j = 0; j < 100; j = j + 1 ) {
+      baselines[i] += get_flexR(i);
+    }
+    baselines[i] /= 100.0;
+  }
 }
 
-int flexADC;
-float flexV;
-float flexR;
 
 void loop() 
 {
+  float bflexR;
+
   for( int i = 0; i < num_pins; i = i + 1 ) {
-    flexADC = analogRead(flex_pins[i]);
-    flexV = flexADC * VCC / 1023.0;
-    flexR = R_DIV * (VCC / flexV - 1.0);
-    Serial.print(flexR);Serial.print('\t');
+    bflexR = get_flexR(i) - baselines[i];
+
+    if (not TAB_FORMAT) Serial.print("('");
+    if (not TAB_FORMAT) Serial.print(Flexes[i]);
+    if (not TAB_FORMAT) Serial.print("',");
+    Serial.print(int(bflexR/10));
+    if (TAB_FORMAT) Serial.print('\t');
+    else Serial.println(")");
   }
-  Serial.println("");
+
+  if (TAB_FORMAT) Serial.println("");
   delay(10);
+
 }
 

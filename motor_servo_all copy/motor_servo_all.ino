@@ -1,67 +1,3 @@
-#define USE_MOTOR_SERVO
-//#define USE_ENCODER
-//#define USE_IMU
-#define USE_LED
-//#define USE_FLEX
-
-
-void setup() {
-  #ifdef USE_MOTOR_SERVO
-    motor_servo_setup();
-  #endif
-  #ifdef USE_ENCODER
-    encoder_setup();
-  #endif
-  #ifdef USE_IMU
-    imu_setup();
-  #endif
-  #ifdef USE_LED
-    led_setup();
-  #endif
-  #ifdef USE_FLEX
-    flex_setup();
-  #endif
-
-}
-
-
-void loop() {
-  
-  #ifdef USE_MOTOR_SERVO
-    motor_servo_loop();
-  #endif
-  #ifdef USE_ENCODER
-    encoder_loop();
-  #endif
-  #ifdef USE_IMU
-    imu_loop();
-  #endif
-  #ifdef USE_LED
-    led_loop();
-  #endif
-  #ifdef USE_FLEX
-    flex_loop();
-  #endif
-
-  //GPS_loop();
-
-  delay(10); // loop
-}
-//
-/////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-
-#ifdef USE_MOTOR_SERVO
-
 
 #include "PinChangeInterrupt.h" // Adafruit library
 #include <Servo.h> // Arduino library
@@ -120,7 +56,7 @@ volatile float rate_1 = 0.0; // for encoder
 //
 int servos_attached = 0;
 
-void motor_servo_setup()
+void setup()
 {
   Serial.begin(115200);
   Serial.setTimeout(5);
@@ -150,6 +86,11 @@ void motor_servo_setup()
   servo_null_pwm = servo_pwm;
   motor_null_pwm = motor_pwm;
 
+  encoder_setup();
+  imu_setup();
+  led_setup();
+  flex_setup();
+  //GPS_setup();
 }
 
 
@@ -231,7 +172,7 @@ void motor_interrupt_service_routine(void) {
 
 
 
-void motor_servo_loop() {
+void loop() {
   
   unsigned int A = Serial.parseInt();
   unsigned int B = Serial.parseInt();
@@ -269,6 +210,11 @@ void motor_servo_loop() {
     }
   }
   
+  encoder_loop();
+  imu_loop();
+  led_loop();
+  flex_loop();
+  //GPS_loop();
 
   Serial.print("('mse',");
   Serial.print(button_pwm);
@@ -280,20 +226,12 @@ void motor_servo_loop() {
   Serial.print(rate_1);
   Serial.println(")");
 
-  //delay(10); // loop
+  delay(10); // loop
 }
 //
 /////////////////////////////////////////
 
-#endif
 
-
-
-
-
-
-
-#ifdef USE_ENCODER
 
 ////////////// ENCODER //////////////////
 //
@@ -392,7 +330,6 @@ void doEncoderB()
 //
 ///////////////////
 
-#endif
 
 
 
@@ -400,7 +337,7 @@ void doEncoderB()
 
 
 
-#ifdef USE_IMU
+
 
 //#include <SoftwareSerial.h>
 #include <Wire.h>
@@ -698,7 +635,6 @@ int gyroWriteI2C( byte regAddr, byte val){
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-#endif
 
 
 
@@ -711,7 +647,8 @@ int gyroWriteI2C( byte regAddr, byte val){
 
 
 
-#ifdef USE_LED
+
+
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
@@ -1021,10 +958,9 @@ void led_loop() {
   //delay(10);
 }
 
-#endif
 
 
-#ifdef USE_FLEX
+
 
 /******************************************************************************
 Flex_Sensor_Example.ino
@@ -1073,7 +1009,7 @@ void flex_loop()
   Serial.println("");
   //delay(10);
 }
-#endif
+
 
 
 
