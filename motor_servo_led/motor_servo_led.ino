@@ -2,9 +2,11 @@
 #define SERVO_MAX   4000
 #define MOTOR_MAX   SERVO_MAX
 #define BUTTON_MAX  SERVO_MAX
+#define CAMERA_MAX  SERVO_MAX
 #define SERVO_MIN   500
 #define MOTOR_MIN   SERVO_MIN
 #define BUTTON_MIN  SERVO_MIN
+#define CAMERA_MIN  SERVO_MIN
 
 #include "PinChangeInterrupt.h" // Adafruit library
 #include <Servo.h> // Arduino library
@@ -12,17 +14,22 @@
 // These come from the radio receiver via three black-red-white ribbons.
 #define PIN_SERVO_IN 11
 #define PIN_MOTOR_IN 10
-#define PIN_BUTTON_IN 6//12
+#define PIN_BUTTON_IN 12
 
 // These go out to ESC (motor controller) and steer servo via black-red-white ribbons.
 #define PIN_SERVO_OUT 9
 #define PIN_MOTOR_OUT 8
+#define PIN_CAMERA_OUT 5
+
+#define A_PIN_SERVO_FEEDBACK 5
+
 
 volatile int button_pwm = 1210;
 volatile int servo_pwm = 0;
 volatile int motor_pwm = 0;
 
 int servo_command_pwm = 0;
+int camera_command_pwm = 0;
 int motor_command_pwm = 0;
 int motor_null_pwm = 1500;
 int servo_null_pwm = 1400;
@@ -35,11 +42,14 @@ int max_communication_delay = 100;
 
 long unsigned int servo_command_time;
 long unsigned int motor_command_time;
+long unsigned int camera_command_time;
 
 Servo servo;
 Servo motor; 
+Servo camera; 
 
 volatile float encoder_value_1 = 0.0;
+volatile float encoder_value_2 = 0.0;
 
 int servos_attached = 0;
 
@@ -54,8 +64,8 @@ void setup()
   }
   motor_servo_setup();
   encoder_setup();
-  imu_setup();
-  led_setup();
+  //imu_setup();
+  //led_setup();
 }
 
 
@@ -112,8 +122,16 @@ void servo_interrupt_service_routine(void) {
     } else if(servo_null_pwm>0) {
       servo.writeMicroseconds(servo_null_pwm);
     }
-  } 
+  }
+  if (dt>CAMERA_MIN && dt<CAMERA_MAX) {
+    if(camera_command_pwm>0) {
+      camera.writeMicroseconds(camera_command_pwm);
+    } else if(servo_null_pwm>0) {
+      camera.writeMicroseconds(servo_null_pwm);
+    }
+  }
 }
+
 
 
 void motor_interrupt_service_routine(void) {
@@ -137,16 +155,20 @@ int led_command = 0;
 void loop() {
 
   int A;
-  int num_serial_reads = 2;
+  int num_serial_reads = 3;
   long unsigned int now;
   
   for( int i = 0; i < num_serial_reads; i = i + 1 ) {
     A = Serial.parseInt();
+    //A = servo_pwm+5000;
     now = millis();
     if (A>500 && A<3000) {
       servo_command_pwm = A;
       servo_command_time = now;
-    } else if (A>10000 && A<30000) {
+    } else if (A>=5000 && A<10000) {
+      camera_command_pwm = A-5000;
+      camera_command_time = now;
+    } else if (A>=10000 && A<30000) {
       motor_command_pwm = A-10000;
       motor_command_time = now;
     } else if (A<0) {
@@ -154,25 +176,28 @@ void loop() {
     }
   }
   
-  if(now-servo_command_time > max_communication_delay || now-motor_command_time > max_communication_delay) {
+  if(0){//(now-servo_command_time > max_communication_delay || now-motor_command_time > max_communication_delay || now-camera_command_time > max_communication_delay) {
     servo_command_pwm = 0;
     motor_command_pwm = 0;
-    if(now-servo_command_time > 5*max_communication_delay || now-motor_command_time > 4*max_communication_delay) {
+    if(now-servo_command_time > 4*max_communication_delay || now-motor_command_time > 4*max_communication_delay || now-camera_command_time > 4*max_communication_delay) {
       servo.detach(); 
       motor.detach(); 
+      camera.detach(); 
       servos_attached = 0;      
     }
   } else{
     if(servos_attached==0) {
       servo.attach(PIN_SERVO_OUT); 
       motor.attach(PIN_MOTOR_OUT); 
+      camera.attach(PIN_CAMERA_OUT); 
       servos_attached = 1;
     }
   }
   
   encoder_loop();
-  imu_loop();
+  //imu_loop();
   
+
   Serial.print("('mse',");
   Serial.print(button_pwm);
   Serial.print(",");
@@ -181,13 +206,11 @@ void loop() {
   Serial.print(motor_pwm);
   Serial.print(",");
   Serial.print(encoder_value_1);
-
-  Serial.print(",temp=");
-  Serial.print(led_command);
-
+  Serial.print(",");
+  Serial.print(analogRead(A_PIN_SERVO_FEEDBACK));
   Serial.println(")");
 
-  led_loop();
+  //led_loop();
   
   delay(10);
 }
