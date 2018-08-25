@@ -320,7 +320,7 @@ void setup() {
 }
 
 
-long unsigned int start_time = millis();
+long unsigned int millis_counter = millis();
 
 
 
@@ -424,18 +424,63 @@ void loop() {
     matrix0.writeDisplay();
     matrix0.blinkRate(blink_rate);
 
-    
   } else {
-    String buf;
-    buf += String(-parsed_int);
-    buf += F(" bags");
-    matrix1.setTextColor(LED_GREEN);
-    for (int8_t x=7; x>=-36; x--) {
-      matrix1.clear();
-      matrix1.setCursor(x,0);
-      matrix1.print(buf);
-      matrix1.writeDisplay();
-    }  
+    parsed_int = -parsed_int
+    int num_arduinos = (parsed_int)/10000;
+    int wifi_GPS_status =       (parsed_int-10000*wifi_status)/1000;
+    int num_bag_files =       (parsed_int-10000*wifi_status-1000*GPS_status);
+
+    wifi_status = 0;
+    GPS_status = 0;
+    if (wifi_GPS_status == 1){
+      wifi_status = 1;
+    } else if (wifi_GPS_status == 2){
+      GPS_status = 1;
+    } else if (wifi_GPS_status == 3){
+      wifi_status = 1;
+      GPS_status = 1;
+    }
+
+    matrix1.clear();
+
+    if (millis()-millis_counter < 1000) {
+      ctr = 0
+      for (int x=0;x<8;x++){
+        for (int y=0;y<8;y++){
+          if (ctr < num_bagfiles) {
+            if (ctr<64) {
+              matrix.drawPixel(x, y, LED_GREEN);
+            } else {
+              matrix.drawPixel(x-8, y-8, LED_RED);
+            }
+            ctr += 1
+          }
+        }
+      }
+    } else if (millis()-millis_counter < 2000) {
+      if (GPS_status) {
+        matrix.setTextColor(LED_GREEN);
+      } else {
+        matrix.setTextColor(LED_RED);
+      }
+      matrix.setCursor(0,0);
+      matrix.print("G");
+    } else if (millis()-millis_counter < 3000) {
+      if (wifi_status) {
+        matrix.setTextColor(LED_GREEN);
+      } else {
+        matrix.setTextColor(LED_RED);
+      }      
+      matrix.setCursor(0,0);
+      matrix.print("W");
+    } else if (millis()-millis_counter < 4000) {
+      if (num_arduinos) {
+        matrix.setTextColor(LED_GREEN);
+      } else {
+        matrix.setTextColor(LED_RED);
+      }
+      matrix.print(num_arduinos); 
+    } else millis_counter = millis())
   }
   GPS_loop();
   delay(10);
