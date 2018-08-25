@@ -307,31 +307,34 @@ void setup() {
   Serial.begin(115200);
   Serial.setTimeout(5);
   matrix0.begin(0x70);  // pass in the address
-  matrix0.setRotation(3);
+  matrix0.setRotation(0);
   matrix0.blinkRate(0);
   matrix0.drawBitmap(0, 0, line_bmp, 8, 8, LED_YELLOW);
   matrix0.writeDisplay();
-  matrix0.blinkRate(1);
+  matrix0.blinkRate(0);
 
   matrix1.begin(0x71);  // pass in the address
   matrix1.setRotation(3);
-
+  matrix1.drawBitmap(0, 0, line_bmp, 8, 8, LED_RED);
+  matrix1.writeDisplay();
+  matrix1.blinkRate(0);
   GPS_setup();
 }
 
 
 long unsigned int millis_counter = millis();
-
+int num_bag_files = 0;
+int num_arduinos = 0;
+int wifi_status = 0;
+int GPS_status = 0;
 
 
 void loop() {
 
+  if (millis()-millis_counter > 4000) {millis_counter = millis();}
   int led_color = 0;
   int blink_rate = 0;
-
-
-
-  unsigned int parsed_int = Serial.parseInt();
+  int parsed_int = Serial.parseInt();
 
   if (parsed_int > 0) {
       int orientation = (parsed_int)/10000;
@@ -424,63 +427,91 @@ void loop() {
     matrix0.writeDisplay();
     matrix0.blinkRate(blink_rate);
 
-  } else {
-    parsed_int = -parsed_int
-    int num_arduinos = (parsed_int)/10000;
-    int wifi_GPS_status =       (parsed_int-10000*wifi_status)/1000;
-    int num_bag_files =       (parsed_int-10000*wifi_status-1000*GPS_status);
-
-    wifi_status = 0;
-    GPS_status = 0;
-    if (wifi_GPS_status == 1){
+  } else if (-parsed_int >= 10000) {
+    
+    parsed_int =          -parsed_int;
+    GPS_status = (parsed_int)/10000;
+    num_arduinos = (parsed_int-10000*GPS_status)/1000;
+    num_bag_files =       (parsed_int-10000*GPS_status-1000*num_arduinos);
+    if (num_bag_files < 500) wifi_status = 0;
+    else {
+      num_bag_files -= 500;
       wifi_status = 1;
-    } else if (wifi_GPS_status == 2){
-      GPS_status = 1;
-    } else if (wifi_GPS_status == 3){
-      wifi_status = 1;
-      GPS_status = 1;
     }
+    if (GPS_status==1) GPS_status = 0;
+    else if (GPS_status==2) GPS_status = 1;
 
-    matrix1.clear();
-
+    /*
+    Serial.println("[");
+    Serial.println(parsed_int);
+    Serial.println(wifi_status);
+    Serial.println(GPS_status);
+    Serial.println(num_arduinos);
+    Serial.println(num_bag_files);
+    //Serial.println(millis()-millis_counter);
+    Serial.println("]");
+    // good test number: -24565
+    */
+    
     if (millis()-millis_counter < 1000) {
-      ctr = 0
+      //Serial.println("num_bag_files");
+      matrix1.clear();
+      int ctr = 0;
       for (int x=0;x<8;x++){
         for (int y=0;y<8;y++){
-          if (ctr < num_bagfiles) {
+          if (ctr < num_bag_files) {
             if (ctr<64) {
-              matrix.drawPixel(x, y, LED_GREEN);
-            } else {
-              matrix.drawPixel(x-8, y-8, LED_RED);
+              matrix1.drawPixel(x, y, LED_GREEN);
             }
-            ctr += 1
+            ctr++;
           }
         }
       }
-    } else if (millis()-millis_counter < 2000) {
+      if (num_bag_files > 64) {
+        for (int x=0;x<8;x++){
+          for (int y=0;y<8;y++){
+            if (ctr < num_bag_files) {
+                matrix1.drawPixel(x, y, LED_RED);
+            }
+            ctr++;
+          }
+        } 
+      } 
+
+    }  else if (millis()-millis_counter < 2000) {
+      //Serial.println("GPS_status");
       if (GPS_status) {
-        matrix.setTextColor(LED_GREEN);
+        matrix1.setTextColor(LED_GREEN);
       } else {
-        matrix.setTextColor(LED_RED);
+        matrix1.setTextColor(LED_RED);
       }
-      matrix.setCursor(0,0);
-      matrix.print("G");
+      matrix1.clear();
+      matrix1.setCursor(0,0);
+      matrix1.print("G");
+
     } else if (millis()-millis_counter < 3000) {
+      //Serial.println("wifi_status");
+
       if (wifi_status) {
-        matrix.setTextColor(LED_GREEN);
+        matrix1.setTextColor(LED_GREEN);
       } else {
-        matrix.setTextColor(LED_RED);
-      }      
-      matrix.setCursor(0,0);
-      matrix.print("W");
+        matrix1.setTextColor(LED_RED);
+      }    
+      matrix1.clear();  
+      matrix1.setCursor(0,0);
+      matrix1.print("W");
+
     } else if (millis()-millis_counter < 4000) {
-      if (num_arduinos) {
-        matrix.setTextColor(LED_GREEN);
-      } else {
-        matrix.setTextColor(LED_RED);
-      }
-      matrix.print(num_arduinos); 
-    } else millis_counter = millis())
+      //Serial.println("num_arduinos");
+      matrix1.setTextColor(LED_YELLOW);
+      matrix1.clear();
+      matrix1.setCursor(0,0);
+      matrix1.print(num_arduinos); 
+    } else {
+        millis_counter = millis();
+    }
+    matrix1.writeDisplay();
+    matrix1.blinkRate(0);
   }
   GPS_loop();
   delay(10);
@@ -529,7 +560,8 @@ void loop() {
 
 // If using software serial, keep this line enabled
 // (you can change the pin numbers to match your wiring):
-SoftwareSerial mySerial(3, 2);
+SoftwareSerial mySerial(9,8);
+//SoftwareSerial mySerial(5,4);
 
 // If using hardware serial (e.g. Arduino Mega), comment out the
 // above SoftwareSerial line, and enable this line instead
