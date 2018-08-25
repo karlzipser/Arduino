@@ -215,4 +215,54 @@ void loop() {
   matrix.writeDisplay();
   delay(500);
   */
+  matrix.setTextWrap(false);  // we dont want text to wrap so it scrolls nicely
+  matrix.setTextSize(1);
+  matrix.setTextColor(LED_GREEN);
+
+  int num_bag_files = 60; 
+  String stringOne = " bag files";
+  String stringThree = num_bag_files + stringOne;
+  Serial.println(stringThree);
+  matrix.setTextColor(LED_GREEN);
+
+// write python encoders and C++ decoders
+
+// -32767 to 32767
+
+// bagfile count
+// -00xxx bagfiles, 0 to 999
+
+// working and not working arduinos (green vs red)
+// -0x000 not working arduino (1 to 9)
+
+// wifi, different domains and individual ips
+// -10xxx = 192.168.1.xxx
+// -20xxx = 172.20.10.xxx
+// -30xxx = 10.0.0.xxx
+// -300xx = 10.0.0.xx
+// -30000
+// or wifi not connected
+
+// GPS3a fix: -11000
+// GPS3b fix: -12000
+// GPS3a+GPS3b fix: -13000
+
+
+  for (int8_t x=7; x>=-36; x--) {
+    matrix.clear();
+    matrix.setCursor(x,0);
+    matrix.print(stringThree);
+    matrix.writeDisplay();
+    delay(100);
+
+  String s5 = 'MSE'
+  matrix.setTextColor(LED_GREEN);
+  for (int8_t x=7; x>=-36; x--) {
+    matrix.clear();
+    matrix.setCursor(x,0);
+    matrix.print(s5+" not working!");
+    matrix.writeDisplay();
+    delay(100);
+  }
 }
+

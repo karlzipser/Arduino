@@ -28,6 +28,7 @@ void setup()
 
 
 uint32_t timer = millis();
+float acc_xs = 0;float acc_ys = 0;float acc_zs = 0;
 void loop() {
 
  
@@ -39,10 +40,16 @@ void loop() {
 
   sensors_event_t event; 
   mma.getEvent(&event);
+  acc_xs = 0.9*acc_xs + 0.1*event.acceleration.x;
+  acc_ys = 0.9*acc_ys + 0.1*event.acceleration.y;
+  acc_zs = 0.9*acc_zs + 0.1*event.acceleration.z;
   //Serial.print("(acc,");
-  //Serial.print(event.acceleration.x); Serial.print(",");
-  Serial.print(event.acceleration.y);// Serial.print(",");
-  //Serial.print(event.acceleration.z); Serial.print(")");
+  //Serial.print(event.acceleration.x); Serial.print("\t");
+  Serial.print(acc_xs); Serial.print("\t");
+  Serial.print(acc_ys); Serial.print("\t");
+  Serial.print(acc_zs); Serial.print("\t");
+  //Serial.print(event.acceleration.y); Serial.print("\t");
+  //Serial.println(event.acceleration.z); //Serial.print(")");
   Serial.println();
   delay(1000/100);
 

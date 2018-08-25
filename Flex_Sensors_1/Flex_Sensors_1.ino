@@ -38,8 +38,8 @@ float get_flexR(int pin)
   float flexV;
   float flexR;
   flexADC = analogRead(flex_pins[pin]);
-  flexV = flexADC * VCC / 1023.0;
-  flexR = R_DIV * (VCC / flexV - 1.0);
+  flexV = flexADC / 100.0 * VCC / 1023.0;
+  flexR = R_DIV / 100.0 * (VCC / flexV - 1.0);
   return flexR;
 }
 
