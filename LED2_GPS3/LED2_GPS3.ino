@@ -456,18 +456,23 @@ void loop() {
     if (millis()-millis_counter < 1000) {
       //Serial.println("num_bag_files");
       matrix1.clear();
-      int ctr = 0;
-      for (int x=0;x<8;x++){
-        for (int y=0;y<8;y++){
-          if (ctr < num_bag_files) {
-            if (ctr<64) {
-              matrix1.drawPixel(x, y, LED_GREEN);
+      if (parsed_int == 11119){
+        matrix1.drawBitmap(0, 0, X_bmp, 8, 8, LED_RED);
+      } else {
+        int ctr = 0;
+        for (int x=0;x<8;x++){
+          for (int y=0;y<8;y++){
+            if (ctr < num_bag_files) {
+              if (ctr<64) {
+                matrix1.drawPixel(x, y, LED_GREEN);
+              }
+              ctr++;
             }
-            ctr++;
           }
         }
       }
       if (num_bag_files > 64) {
+        int ctr=0;
         for (int x=0;x<8;x++){
           for (int y=0;y<8;y++){
             if (ctr < num_bag_files) {

@@ -17,13 +17,14 @@ Based on:
     Arduino 1.6.7
 ******************************************************************************/
 
+
 char* Flexes[]={"xfl0","xfl1","xfc0","xan0","xfr0","xfr1","xbl0", "xbl1","xbr1","xbr0"};
 
 float baselines[] = {0,0,0,0,0,0,0,0,0,0,0,0};
 
-int flex_pins[] = {A0};//,A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11};
-//int flex_pins[] = {A9};
-int num_pins = 1;
+int flex_pins[] = {A8,A9,A0,A1, A2,A3, A4,A5, A6,A7, A8,A9,A10,A11};
+
+int num_pins = 2;
 const float VCC = 5.0; // Estimated voltage of Ardunio 5V line
 //const float R_DIV = 47500.0; // Measured resistance of 47k resistor
 const float R_DIV = 10000.0; // Estimated resistance of 10k resistor
@@ -62,17 +63,25 @@ void loop()
 
   for( int i = 0; i < num_pins; i = i + 1 ) {
     bflexR = get_flexR(i) - baselines[i];
-
+    if (i==0) {
+      if (abs(bflexR)>10) {
+        //Mouse.move(0, bflexR/100);
+      }
+    }
     if (not TAB_FORMAT) Serial.print("('");
     if (not TAB_FORMAT) Serial.print(Flexes[i]);
     if (not TAB_FORMAT) Serial.print("',");
+    
     Serial.print(int(bflexR/10));
     if (TAB_FORMAT) Serial.print('\t');
     else Serial.println(")");
   }
 
   if (TAB_FORMAT) Serial.println("");
+  
+  
   delay(10);
+  
 
 }
 
