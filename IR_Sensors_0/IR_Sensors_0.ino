@@ -24,9 +24,9 @@ char* Flexes[]={"FR0","FR1", "FL2","FL3", "FC0", "FL0","FL1", "FL2","FR3"};
 
 float baselines[] = {0,0,0,0,0,0,0,0,0,0,0,0};
 
-int flex_pins[] = {A0,A1, A2,A3, A10, A6,A7};//, A10,A11};
+int flex_pins[] = {A0,A1, A2,A3, A4, A6,A7};//, A10,A11};
 
-int num_pins = 5;
+int num_pins = 1;
 const float VCC = 5.0; // Estimated voltage of Ardunio 5V line
 //const float R_DIV = 47500.0; // Measured resistance of 47k resistor
 const float R_DIV = 10000.0; // Estimated resistance of 10k resistor
@@ -35,46 +35,38 @@ const int TAB_FORMAT = 1;
 
 
 
-float get_flexR(int pin)
+float get_IR(int pin)
 {
   int flexADC;
-  float flexV;
-  float flexR;
   flexADC = analogRead(flex_pins[pin]);
-  flexV = flexADC * VCC / 1023.0;
-  flexR = R_DIV * (VCC / flexV - 1.0);
-  return flexR;
+  return flexADC;
 }
 
 void setup() 
 {
   Serial.begin(115200);
-  for( int i = 0; i < num_pins; i = i + 1 ) {
-        pinMode(flex_pins[i], INPUT);
-    for( int j = 0; j < 100; j = j + 1 ) {
-      baselines[i] += get_flexR(i);
-    }
-    baselines[i] /= 100.0;
-  }
 }
 
-
+float IR_prev = 0;
+float s = 0.95;
+long unsigned int now = millis();
 void loop() 
 {
-  float bflexR;
-
+  
+  
   for( int i = 0; i < num_pins; i = i + 1 ) {
-    bflexR = get_flexR(i); // - baselines[i];    
-    Serial.print(bflexR/1000.0);
-    if (TAB_FORMAT) Serial.print('\t');
-    else Serial.println(")");
+    float IR = get_IR(i); // - baselines[i];
+    IR = s*IR_prev + (1.0-s)*IR;
+    IR_prev = IR; 
+    if (millis()>now+50) {
+      Serial.print(IR);
+      if (TAB_FORMAT) Serial.print('\t');
+      else Serial.println(")");
+      now = millis();
+    }
   }
 
   if (TAB_FORMAT) Serial.println("");
-  
-  
-  delay(10);
-  
 
 }
 

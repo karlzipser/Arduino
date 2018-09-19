@@ -18,18 +18,20 @@ Based on:
 ******************************************************************************/
 
 
-char* Flexes[]={"FL0","FL1","FL2","FL3","FC0","TC0","SL0","SR0","FR0","FR1","FR2","FR3"};
+char* Flexes[]={"FR0","FR1", "FL2","FL3", "FC0", "FL0","FL1", "FL2","FR3"};
+
+//FL2 'sparks', FR3 'sparks'
 
 float baselines[] = {0,0,0,0,0,0,0,0,0,0,0,0};
 
-int flex_pins[] = {A0,A1,  A2,A3,  A4,A5,  A6,A7,  A8,A9,  A10,A11};
+int flex_pins[] = {A0,A1, A3,A2, A4, A6,A7};//, A10,A11};
 
-int num_pins = 12;
+int num_pins = 2;
 const float VCC = 5.0; // Estimated voltage of Ardunio 5V line
 //const float R_DIV = 47500.0; // Measured resistance of 47k resistor
 const float R_DIV = 10000.0; // Estimated resistance of 10k resistor
 
-const int TAB_FORMAT = 0;
+const int TAB_FORMAT = 1;
 
 
 
@@ -62,12 +64,12 @@ void loop()
   float bflexR;
 
   for( int i = 0; i < num_pins; i = i + 1 ) {
-    bflexR = get_flexR(i) - baselines[i];
-    if (i==0) {
-      if (abs(bflexR)>10) {
-        //Mouse.move(0, bflexR/100);
-      }
-    }
+    bflexR = get_flexR(i);// - baselines[i];
+    //if (i==0) {
+    //  if (abs(bflexR)>10) {
+    //    //Mouse.move(0, bflexR/100);
+    //  }
+    //}
     if (not TAB_FORMAT) Serial.print("('");
     if (not TAB_FORMAT) Serial.print(Flexes[i]);
     if (not TAB_FORMAT) Serial.print("',");
