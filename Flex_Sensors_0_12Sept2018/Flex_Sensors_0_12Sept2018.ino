@@ -18,22 +18,18 @@ Based on:
 ******************************************************************************/
 
 
-char* Flexes[]={"FR0","FR1", "FL2","FL3", "FC0", "FL0","FL1", "FL2","FR3"};
+char* Flexes[]={"FL0","FL1", "FL2","FL3", "FR0","FR1", "FR2","FR3", "FC0","FC1", "FC2","FC3"};
 
-//FL2 'sparks', FR3 'sparks'
+int flex_pins[] = {A0,A1, A2,A3, A6,A7, A8,A9,  A4,A5,  A10,A11};
 
-float baselines[] = {0,0,0,0,0,0,0,0,0,0,0,0};
+float slow_baselines[] = {0,0,0,0,0,0,0,0,0,0,0,0};
+float s = 0.999;
 
-int flex_pins[] = {A0,A1, A3,A2, A4, A6,A7};//, A10,A11};
-
-int num_pins = 2;
+int num_pins = 12;
 const float VCC = 5.0; // Estimated voltage of Ardunio 5V line
-//const float R_DIV = 47500.0; // Measured resistance of 47k resistor
 const float R_DIV = 10000.0; // Estimated resistance of 10k resistor
 
-const int TAB_FORMAT = 1;
-
-
+const int TAB_FORMAT = 0;
 
 float get_flexR(int pin)
 {
@@ -51,10 +47,13 @@ void setup()
   Serial.begin(115200);
   for( int i = 0; i < num_pins; i = i + 1 ) {
         pinMode(flex_pins[i], INPUT);
-    for( int j = 0; j < 100; j = j + 1 ) {
-      baselines[i] += get_flexR(i);
+        slow_baselines[i] = get_flexR(i);
+  }
+  for(int j = 0; j < 100; j = j+1) {
+    for( int i = 0; i < num_pins; i = i + 1 ) {
+      slow_baselines[i] = s * slow_baselines[i] + (1.0-s) * get_flexR(i);
     }
-    baselines[i] /= 100.0;
+    delay(10);
   }
 }
 
@@ -64,17 +63,17 @@ void loop()
   float bflexR;
 
   for( int i = 0; i < num_pins; i = i + 1 ) {
-    bflexR = get_flexR(i);// - baselines[i];
-    //if (i==0) {
-    //  if (abs(bflexR)>10) {
-    //    //Mouse.move(0, bflexR/100);
-    //  }
-    //}
+
+    bflexR = get_flexR(i);
+
+    slow_baselines[i] = s * slow_baselines[i] + (1.0-s) * bflexR;
+
     if (not TAB_FORMAT) Serial.print("('");
     if (not TAB_FORMAT) Serial.print(Flexes[i]);
     if (not TAB_FORMAT) Serial.print("',");
     
-    Serial.print(int(bflexR/10));
+    Serial.print(bflexR - slow_baselines[i]);
+    //Serial.print(bflexR);
     if (TAB_FORMAT) Serial.print('\t');
     else Serial.println(")");
   }

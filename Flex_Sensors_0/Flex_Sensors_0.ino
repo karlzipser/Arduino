@@ -24,9 +24,9 @@ char* Flexes[]={"FR0","FR1", "FL2","FL3", "FC0", "FL0","FL1", "FL2","FR3"};
 
 float baselines[] = {0,0,0,0,0,0,0,0,0,0,0,0};
 
-int flex_pins[] = {A0,A1, A2,A3, A10, A6,A7};//, A10,A11};
+int flex_pins[] = {A0,A1, A2,A3};//A0,A1, A2,A3};//,   A6,A7, A8,A9 };
 
-int num_pins = 5;
+int num_pins = 3;
 const float VCC = 5.0; // Estimated voltage of Ardunio 5V line
 //const float R_DIV = 47500.0; // Measured resistance of 47k resistor
 const float R_DIV = 10000.0; // Estimated resistance of 10k resistor
@@ -64,9 +64,14 @@ void loop()
   float bflexR;
 
   for( int i = 0; i < num_pins; i = i + 1 ) {
-    bflexR = get_flexR(i); // - baselines[i];    
-    Serial.print(bflexR/1000.0);
-    if (TAB_FORMAT) Serial.print('\t');
+    bflexR = get_flexR(i); // - baselines[i];
+
+
+    if (bflexR > 100000) {bflexR = 100000;}
+
+       
+    Serial.print(bflexR);
+    if (TAB_FORMAT) Serial.print("\t0\t10000\t");
     else Serial.println(")");
   }
 

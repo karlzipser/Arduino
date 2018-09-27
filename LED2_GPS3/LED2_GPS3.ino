@@ -307,14 +307,14 @@ void setup() {
   Serial.begin(115200);
   Serial.setTimeout(5);
   matrix0.begin(0x70);  // pass in the address
-  matrix0.setRotation(0);
+  matrix0.setRotation(3);//0/1/2
   matrix0.blinkRate(0);
   matrix0.drawBitmap(0, 0, line_bmp, 8, 8, LED_YELLOW);
   matrix0.writeDisplay();
   matrix0.blinkRate(0);
 
   matrix1.begin(0x71);  // pass in the address
-  matrix1.setRotation(3);
+  matrix1.setRotation(0);//3/1/2
   matrix1.drawBitmap(0, 0, line_bmp, 8, 8, LED_RED);
   matrix1.writeDisplay();
   matrix1.blinkRate(0);
@@ -562,10 +562,10 @@ void loop() {
 // If you're using the Adafruit GPS shield, change 
 // SoftwareSerial mySerial(3, 2); -> SoftwareSerial mySerial(8, 7);
 // and make sure the switch is set to SoftSerial
-
+SoftwareSerial mySerial(3, 2);
 // If using software serial, keep this line enabled
 // (you can change the pin numbers to match your wiring):
-SoftwareSerial mySerial(9,8);
+//SoftwareSerial mySerial(9,8);
 //SoftwareSerial mySerial(5,4);
 
 // If using hardware serial (e.g. Arduino Mega), comment out the
