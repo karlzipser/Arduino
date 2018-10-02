@@ -70,15 +70,10 @@ void setup()
      }
      delay(1);
    }
-   /*
-  while(Serial.available() > 0) {
-    char t = Serial.read();
-  }
-  */
   motor_servo_setup();
   encoder_setup();
   imu_setup();
-  led_setup();
+  tone_setup();
   start_time = millis();
 }
 
@@ -161,7 +156,7 @@ void motor_interrupt_service_routine(void) {
 /////////////////////////////////////////////////////////////////
 
 
-int led_command = 0;
+int tone_command = 0;
 
 long unsigned int rate_dt = millis();
 long unsigned int rate_dt_prev = rate_dt;
@@ -174,7 +169,7 @@ void loop() {
   
   for( int i = 0; i < num_serial_reads; i = i + 1 ) {
     A = Serial.parseInt();
-    //A = servo_pwm+5000;
+
     now = millis();
     if (A>500 && A<3000) {
       servo_command_pwm = A;
@@ -185,21 +180,17 @@ void loop() {
     } else if (A>=10000 && A<30000) {
       motor_command_pwm = A-10000;
       motor_command_time = now;
-    } else if (A<0) {
-      led_command = -A;
-    }
+    } 
   }
   
   if(now-servo_command_time > max_communication_delay || now-motor_command_time > max_communication_delay || now-camera_command_time > max_communication_delay) {
     servo_command_pwm = 0;
     motor_command_pwm = 0;
-    //Serial.println("AAAAA");
     if(now-servo_command_time > 4*max_communication_delay || now-motor_command_time > 4*max_communication_delay || now-camera_command_time > 4*max_communication_delay) {
       servo.detach(); 
       motor.detach(); 
       camera.detach(); 
       servos_attached = 0;
-      //Serial.println("BBBBB");     
     }
   } else{
     if(servos_attached==0) {
@@ -207,13 +198,11 @@ void loop() {
       motor.attach(PIN_MOTOR_OUT); 
       camera.attach(PIN_CAMERA_OUT); 
       servos_attached = 1;
-      //Serial.println("CCCCC");
     }
   }
   
-
-
   if (millis()-start_time > 1*1000) {
+    
     //Serial.println(millis()-start_time);
     //Serial.println(now-servo_command_time);
     //Serial.println(max_communication_delay);
@@ -228,17 +217,16 @@ void loop() {
     //Serial.print(",");
     //Serial.print(analogRead(A_PIN_SERVO_FEEDBACK));
     Serial.println(")");
-    if (1) {
+    
+    if (0) {
       Serial.println(1000/(rate_dt-rate_dt_prev));
       rate_dt_prev = rate_dt;
       rate_dt = millis();
     }
   }
   
-  //delay(10);
   encoder_loop();
   imu_loop();
-  led_loop();
 }
 
 
@@ -255,16 +243,13 @@ void loop() {
 #include <Wire.h>
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_Sensor.h>
-//#include "constants.h"
 
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
 
 
 void imu_setup()  
 {
-  
-  //Serial.begin(115200);
-  Serial.println('imu_setup()');
+  Serial.println("imu_setup()");
   gyro_setup();
   Serial.println("Adafruit MMA8451 test!");
   if (! mma.begin()) {
@@ -272,10 +257,7 @@ void imu_setup()
     while (1);
   }
   Serial.println("MMA8451 found!");
-  mma.setRange(MMA8451_RANGE_2_G);
-  //Serial.print("Range = "); Serial.print(2 << mma.getRange());  
-  //Serial.println("G");
-  
+  mma.setRange(MMA8451_RANGE_2_G);  
 }
 
 
@@ -289,9 +271,9 @@ float ctr = 0;
 
 uint32_t timer = millis();
 void imu_loop() {
-  
-  //gyro_loop();
-/*    
+  /*
+  gyro_loop();
+   
   if (timer > millis())  timer = millis();
 
   if (millis() - timer > 1000) {
@@ -306,7 +288,7 @@ void imu_loop() {
   Serial.print(event.acceleration.z); Serial.print(")");
   Serial.println();
   delay(1000/100);
-*/
+  */
   sensors_event_t event; 
   mma.getEvent(&event);
   ax += event.acceleration.x;
@@ -316,7 +298,7 @@ void imu_loop() {
 
 
   if (timer > millis())  timer = millis();
-
+  
   if (millis() - timer > 10) {
     timer = millis();
     Serial.print("('acc',");
@@ -331,6 +313,7 @@ void imu_loop() {
     ctr = 0;
     gyro_loop();
   }
+  
 
 
 }
@@ -628,527 +611,6 @@ void doEncoderB()
 
 
 
-
-
-
-
-#include "Adafruit_LEDBackpack.h"
-#include "Adafruit_GFX.h"
-
-Adafruit_BicolorMatrix matrix0 = Adafruit_BicolorMatrix();
-Adafruit_BicolorMatrix matrix1 = Adafruit_BicolorMatrix();
-
-// [orientation][blink][color][_,symbol]
-// e.g., 12304 = straight, blink=2, yellow, play
-
-const int STRAIGHT = 1;
-const int LEFT = 2;
-const int RIGHT = 3;
-
-const int BLINK_0 = 0;
-const int BLINK_1 = 1;
-const int BLINK_2 = 2;
-
-const int RED = 1;
-const int GREEN = 2;
-const int YELLOW = 3;
-
-const int DIRECT = 1;
-const int FOLLOW = 2;
-const int FURTIVE = 3;
-const int PLAY = 4;
-const int CALIBRATE = 5;
-const int DRIVE_MODE = 6;
-const int SELECT_MODE = 7;
-const int LOCAL = 8;
-const int HOME = 9;
-const int TILDEN = 10;
-const int CAMPUS = 11;
-const int ARENA = 12;
-const int OTHER = 13;
-//const int AGENT = 14;
-const int LINE = 15;
-const int LINE_BUTTON_4 = 16;
-const int HUMAN = 17;
-const int NETWORK = 18;
-const int X = 19;
-
-static const uint8_t PROGMEM //type for bitmaps
-Calibrate_bmp[] =
-{ B00000000,
-  B00101000,
-  B01101100,
-  B11000110,
-  B11000110,
-  B11000110,
-  B01111100,
-  B00111000 },
-drive_mode_bmp[] =
-{ B00000000,
-  B00111000,
-  B01111100,
-  B11000110,
-  B11000111,
-  B11000111,
-  B11111111,
-  B00000000 },
-select_mode_bmp[] =
-{ B1100110,
-  B1101111,
-  B11011111,
-  B11011011,
-  B11011011,
-  B11111011,
-  B01111011,
-  B00110000 },
-human_bmp[] =
-{ B00000000,
-  B00000000,
-  B11111110,
-  B00010000,
-  B00010000,
-  B11111110,
-  B00000000,
-  B00000000 },
-network_bmp[] =
-{ B00000000,
-  B00000000,
-  B11111110,
-  B00110000,
-  B1100000,
-  B11111110,
-  B00000000,
-  B00000000 },
-_bitmap[] =
-{ B00000000,
-  B00000000,
-  B00000000,
-  B00000000,
-  B00000000,
-  B00000000,
-  B00000000,
-  B00000000 },
-X_bmp[] =
-{ B10000001,
-  B01000010,
-  B00100100,
-  B00011000,
-  B00011000,
-  B00100100,
-  B01000010,
-  B10000001 },
-direct_straight_bmp[] =
-{ B00000000,
-  B00100000,
-  B01100000,
-  B11111100,
-  B11111100,
-  B01100000,
-  B00100000,
-  B00000000 },
-direct_left_bmp[] =
-{ B00000000,
-  B00000000,
-  B00000000,
-  B00011000,
-  B00011000,
-  B01111110,
-  B00111100,
-  B00011000 },
-direct_right_bmp[] =
-{ B00011000,
-  B00111100,
-  B01111110,
-  B00011000,
-  B00011000,
-  B00000000,
-  B00000000,
-  B00000000 },
-follow_straight_bmp[] =
-{ B10000000,
-  B10001000,
-  B10011000,
-  B10111111,
-  B10111111,
-  B10011000,
-  B10001000,
-  B10000000 },
-follow_left_bmp[] =
-{ B00000000,
-  B00011000,
-  B00011000,
-  B01111110,
-  B00111100,
-  B00011000,
-  B00000000,
-  B11111111
-  },
-follow_right_bmp[] =
-{ B11111111,
-  B00000000,
-  B00011000,
-  B00111100,
-  B01111110,
-  B00011000,
-  B00011000,
-  B00000000
-  },
-furtive_straight_bmp[] =
-{ B00000000,
-  B00100000,
-  B01000000,
-  B11111100,
-  B01000000,
-  B00100000,
-  B00000000,
-  B00000000 },
-furtive_left_bmp[] =
-{ B00000000,
-  B00000000,
-  B00000000,
-  B00001000,
-  B00001000,
-  B00101010,
-  B00011100,
-  B00001000 },
-furtive_right_bmp[] =
-{ B00001000,
-  B00011100,
-  B00101010,
-  B00001000,
-  B00001000,
-  B00000000,
-  B00000000,
-  B00000000 },
-play_straight_bmp[] =
-{ B00010000,
-  B00110000,
-  B01111111,
-  B11111111,
-  B11111111,
-  B01111111,
-  B00110000,
-  B00010000 },
-play_left_bmp[] =
-{ B00111100,
-  B00111100,
-  B00111100,
-  B00111100,
-  B11111111,
-  B01111110,
-  B00111100,
-  B00011000 },
-play_right_bmp[] =
-{ B00011000,
-  B00111100,
-  B01111110,
-  B11111111,
-  B00111100,
-  B00111100,
-  B00111100,
-  B00111100 },
-home_bmp[] =
-{ B00000000,
-  B11111111,
-  B11111111,
-  B00110000,
-  B00110000,
-  B11111111,
-  B11111111,
-  B00000000 },
-Tilden_bmp[] =
-{ B00000000,
-  B11000000,
-  B11000000,
-  B11111111,
-  B11111111,
-  B11000000,
-  B11000000,
-  B00000000 },
-local_bmp[] =
-{ B00000000,
-  B00000011,
-  B00000011,
-  B00000011,
-  B00000011,
-  B11111111,
-  B11111111,
-  B00000000 },
-campus_bmp[] =
-{ B00000000,
-  B11111110,
-  B11111111,
-  B00000011,
-  B00000011,
-  B11111111,
-  B11111110,
-  B00000000 },
-arena_bmp[] =
-{ B00000000,
-  B01111111,
-  B11111111,
-  B11011000,
-  B11011000,
-  B11111111,
-  B01111111,
-  B00000000 },
-other_bmp[] =
-{ B00000000,
-  B01111110,
-  B11111111,
-  B11000011,
-  B11000011,
-  B11111111,
-  B01111110,
-  B00000000 },
-agent_bmp[] =
-{ B00000000,
-  B01111110,
-  B11111111,
-  B11011011,
-  B11011011,
-  B11011111,
-  B01101110,
-  B00000000 },
-line_4_bmp[] =
-{ B00000000,
-  B00000001,
-  B00000001,
-  B11111101,
-  B00100001,
-  B11100001,
-  B00000001,
-  B00000000 },
-line_bmp[] =
-{ B00000000,
-  B00000001,
-  B00000001,
-  B00000001,
-  B00000001,
-  B00000001,
-  B00000001,
-  B00000000 };
-
-
-
-void led_setup() {
-  Serial.begin(115200);
-  Serial.setTimeout(5);
-  matrix0.begin(0x70);  // pass in the address
-  matrix0.setRotation(3);//0/1/2
-  matrix0.blinkRate(0);
-  matrix0.drawBitmap(0, 0, line_bmp, 8, 8, LED_YELLOW);
-  matrix0.writeDisplay();
-  matrix0.blinkRate(0);
-
-  matrix1.begin(0x71);  // pass in the address
-  matrix1.setRotation(0);//3/1/2
-  matrix1.drawBitmap(0, 0, line_bmp, 8, 8, LED_RED);
-  matrix1.writeDisplay();
-  matrix1.blinkRate(0);
-  //GPS_setup();
-}
-
-
-long unsigned int millis_counter = millis();
-int num_bag_files = 0;
-int num_arduinos = 0;
-int wifi_status = 0;
-int GPS_status = 0;
-
-
-void led_loop() {
-
-  if (millis()-millis_counter > 4000) {millis_counter = millis();}
-  int led_color = 0;
-  int blink_rate = 0;
-  int parsed_int = Serial.parseInt();
-
-  if (parsed_int > 0) {
-      int orientation = (parsed_int)/10000;
-      int blink =       (parsed_int-10000*orientation)/1000;
-      int color =       (parsed_int-10000*orientation-1000*blink)/100;
-      int symbol =      (parsed_int-10000*orientation-1000*blink-100*color)/1;
-
-    if (blink == BLINK_0) {
-      blink_rate = 0;
-    } else if (blink == BLINK_1) {
-      blink_rate = 1;
-    } else if (blink == BLINK_2) {
-      blink_rate = 2;
-    }
-
-    if (color == RED) {
-      led_color = LED_RED;}
-    else if (color == GREEN) {
-      led_color = LED_GREEN;}
-    else if(color == YELLOW)
-      {led_color = LED_YELLOW;}
-
-    matrix0.clear();
-
-    if (symbol == LINE) {
-      matrix0.drawBitmap(0, 0, line_bmp, 8, 8, led_color);
-    } else if (symbol == CALIBRATE) {
-      matrix0.drawBitmap(0, 0, Calibrate_bmp, 8, 8, led_color);
-    } else if (symbol == DRIVE_MODE) {
-      matrix0.drawBitmap(0, 0, drive_mode_bmp, 8, 8, led_color);
-    } else if (symbol == SELECT_MODE) {
-      matrix0.drawBitmap(0, 0, select_mode_bmp, 8, 8, led_color);
-    } else if (symbol == LINE_BUTTON_4) {
-      matrix0.drawBitmap(0, 0, line_4_bmp, 8, 8, led_color);
-    } else if (symbol == HUMAN) {
-      matrix0.drawBitmap(0, 0, human_bmp, 8, 8, led_color);
-    } else if (symbol == NETWORK) {
-      matrix0.drawBitmap(0, 0, network_bmp, 8, 8, led_color);
-    } else if (symbol == X) {
-      matrix0.drawBitmap(0, 0, X_bmp, 8, 8, led_color);
-    } else if (symbol == DIRECT) {
-        if (orientation == STRAIGHT) {
-          matrix0.drawBitmap(0, 0, direct_straight_bmp, 8, 8, led_color);
-        } else if (orientation == LEFT) {
-          matrix0.drawBitmap(0, 0, direct_left_bmp, 8, 8, led_color);
-        } else if (orientation == RIGHT) {
-          matrix0.drawBitmap(0, 0, direct_right_bmp, 8, 8, led_color);
-        }
-    } else if (symbol == FOLLOW) {
-        if (orientation == STRAIGHT) {
-          matrix0.drawBitmap(0, 0, follow_straight_bmp, 8, 8, led_color);
-        } else if (orientation == LEFT) {
-          matrix0.drawBitmap(0, 0, follow_left_bmp, 8, 8, led_color);
-        } else if (orientation == RIGHT) {
-          matrix0.drawBitmap(0, 0, follow_right_bmp, 8, 8, led_color);
-        }
-    } else if (symbol == FURTIVE) {
-        if (orientation == STRAIGHT) {
-          matrix0.drawBitmap(0, 0, furtive_straight_bmp, 8, 8, led_color);
-        } else if (orientation == LEFT) {
-          matrix0.drawBitmap(0, 0, furtive_left_bmp, 8, 8, led_color);
-        } else if (orientation == RIGHT) {
-          matrix0.drawBitmap(0, 0, furtive_right_bmp, 8, 8, led_color);
-        }
-    } else if (symbol == PLAY) {
-        if (orientation == STRAIGHT) {
-          matrix0.drawBitmap(0, 0, play_straight_bmp, 8, 8, led_color);
-        } else if (orientation == LEFT) {
-          matrix0.drawBitmap(0, 0, play_left_bmp, 8, 8, led_color);
-        } else if (orientation == RIGHT) {
-          matrix0.drawBitmap(0, 0, play_right_bmp, 8, 8, led_color);
-        }
-
-    } else if (symbol == LOCAL) {
-          matrix0.drawBitmap(0, 0, local_bmp, 8, 8, led_color);
-    } else if (symbol == HOME) {
-          matrix0.drawBitmap(0, 0, home_bmp, 8, 8, led_color);
-    } else if (symbol == TILDEN) {
-          matrix0.drawBitmap(0, 0, Tilden_bmp, 8, 8, led_color);
-    } else if (symbol == CAMPUS) {
-          matrix0.drawBitmap(0, 0, campus_bmp, 8, 8, led_color);
-    } else if (symbol == ARENA) {
-          matrix0.drawBitmap(0, 0, arena_bmp, 8, 8, led_color);
-    } else if (symbol == OTHER) {
-          matrix0.drawBitmap(0, 0, other_bmp, 8, 8, led_color);
-
-     matrix0.drawBitmap(0, 0, agent_bmp, 8, 8, led_color);
-    }
-
-    matrix0.writeDisplay();
-    matrix0.blinkRate(blink_rate);
-
-  } else if (-parsed_int >= 10000) {
-    
-    parsed_int =          -parsed_int;
-    GPS_status = (parsed_int)/10000;
-    num_arduinos = (parsed_int-10000*GPS_status)/1000;
-    num_bag_files =       (parsed_int-10000*GPS_status-1000*num_arduinos);
-    if (num_bag_files < 500) wifi_status = 0;
-    else {
-      num_bag_files -= 500;
-      wifi_status = 1;
-    }
-    if (GPS_status==1) GPS_status = 0;
-    else if (GPS_status==2) GPS_status = 1;
-
-    /*
-    Serial.println("[");
-    Serial.println(parsed_int);
-    Serial.println(wifi_status);
-    Serial.println(GPS_status);
-    Serial.println(num_arduinos);
-    Serial.println(num_bag_files);
-    //Serial.println(millis()-millis_counter);
-    Serial.println("]");
-    // good test number: -24565
-    */
-    
-    if (millis()-millis_counter < 1000) {
-      //Serial.println("num_bag_files");
-      matrix1.clear();
-      if (parsed_int == 11119){
-        matrix1.drawBitmap(0, 0, X_bmp, 8, 8, LED_RED);
-      } else {
-        int ctr = 0;
-        for (int x=0;x<8;x++){
-          for (int y=0;y<8;y++){
-            if (ctr < num_bag_files) {
-              if (ctr<64) {
-                matrix1.drawPixel(x, y, LED_GREEN);
-              }
-              ctr++;
-            }
-          }
-        }
-      }
-      if (num_bag_files > 64) {
-        int ctr=0;
-        for (int x=0;x<8;x++){
-          for (int y=0;y<8;y++){
-            if (ctr < num_bag_files) {
-                matrix1.drawPixel(x, y, LED_RED);
-            }
-            ctr++;
-          }
-        } 
-      } 
-
-    }  else if (millis()-millis_counter < 2000) {
-      //Serial.println("GPS_status");
-      if (GPS_status) {
-        matrix1.setTextColor(LED_GREEN);
-      } else {
-        matrix1.setTextColor(LED_RED);
-      }
-      matrix1.clear();
-      matrix1.setCursor(0,0);
-      matrix1.print("G");
-
-    } else if (millis()-millis_counter < 3000) {
-      //Serial.println("wifi_status");
-
-      if (wifi_status) {
-        matrix1.setTextColor(LED_GREEN);
-      } else {
-        matrix1.setTextColor(LED_RED);
-      }    
-      matrix1.clear();  
-      matrix1.setCursor(0,0);
-      matrix1.print("W");
-
-    } else if (millis()-millis_counter < 4000) {
-      //Serial.println("num_arduinos");
-      matrix1.setTextColor(LED_YELLOW);
-      matrix1.clear();
-      matrix1.setCursor(0,0);
-      matrix1.print(num_arduinos); 
-    } else {
-        millis_counter = millis();
-    }
-    matrix1.writeDisplay();
-    matrix1.blinkRate(0);
-  }
-  //GPS_loop();
-  //delay(10);
-}
 
 
 
