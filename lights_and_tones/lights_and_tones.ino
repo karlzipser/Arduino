@@ -19,7 +19,10 @@ int tone_ = 0;
 int beat = 0;
 long duration  = 0;
 
+int mute = 0;
+
 void playTone(int tone_) {
+  if (mute) return;
   long elapsed_time = 0;
   if (tone_ > 0) { 
 
@@ -56,8 +59,11 @@ void play_melody(int melody[],int beats[],int MAX_COUNT) {
 }
 
 
-int melody1929[] = {  C,  b,  g,  C,  b,   e,  R,  C,  c,  g, a, C };
-int beats1929[]  = { 16, 16, 16,  8,  8,  16, 32, 16, 16, 16, 8, 8 }; 
+int melody1929[] = {  C,  b,  g,  C,  b,   e,  R,  C,  c,  g, a, C, R };
+int beats1929[]  = { 16, 16, 16,  8,  8,  16, 32, 16, 16, 16, 8, 8, 32 }; 
+
+int melody1930[] = {  C,  b,  g,  C,  b,   e,  R,  C,  c,  g, a, C };
+int beats1930[]  = { 16, 16, 16,  8,  8,  16, 32, 16, 16, 16, 8, 8 }; 
 
 int melody4[] = {  c,  b,b,b,b};
 int beats4[]  = { 16,  8,8,8,8}; 
@@ -70,19 +76,33 @@ int beats1[]  = { 16,  8};
 int melody0[] = {  f };
 int beats0[]  = { 16 }; 
 
+int melody30[] = {  d, f };
+int beats30[]  = { 32, 8 };
 
+int melody31[] = {  d,e,f };
+int beats31[]  = { 32, 8, 8 };
 
+int melody60[] = {  f, e, d };
+int beats60[]  = { 16, 32, 32 };
+
+int melody61[] = {  f,  e };
+int beats61[]  = { 16, 32 };
 
 int LEFT = 2;
-int CENTER = 3;
-int RIGHT = 4;
+//int CENTER = 3;
+int RIGHT = 3;
+int BAG = 4;
+int ZED = 5;
+int LIDAR = 6;
 
 void setup()
 {
-  pinMode(LEFT, OUTPUT);
-  pinMode(CENTER, OUTPUT);
-  pinMode(RIGHT, OUTPUT);
-
+  pinMode(LEFT, OUTPUT);digitalWrite(LEFT, LOW);
+  //pinMode(CENTER, OUTPUT);digitalWrite(CENTER, LOW);
+  pinMode(RIGHT, OUTPUT);digitalWrite(RIGHT, LOW);
+  pinMode(BAG, OUTPUT);digitalWrite(BAG, LOW);
+  pinMode(ZED, OUTPUT);digitalWrite(ZED, LOW);
+  pinMode(LIDAR, OUTPUT);digitalWrite(LIDAR, LOW);
   Serial.begin(115200);
   Serial.setTimeout(5);
   Serial.println("setup()");
@@ -97,79 +117,84 @@ void setup()
      delay(1);
    }
 }
+int state_left_signal = 0;
+int state_right_signal = 0;
+int state_center_signal = 0;
 
 long unsigned int now_sound = millis();
 long unsigned int now_blink = millis();
-int light_on = 1;
-
-  
-
-
-
-int high;
+int light_off = 0;
 
 void loop() {
 
   int A;
-
   
-  if (millis()-now_sound > 500) {
+
+  if (millis()-now_sound > 1000) {
     now_sound = millis();
     Serial.println("('sound',0,0,0)");
   }
-  if (millis()-now_blink> 250) {
+
+  light_off = 0;
+  if (millis()-now_blink > 250){
+    light_off = 1;
     now_blink = millis();
-    if (light_on) light_on = 0;
-    else light_on = 1;
   }
+
   A = Serial.parseInt();
-  //Serial.println(A);
-  digitalWrite(LEFT, LOW);
-  digitalWrite(CENTER, LOW);
-  digitalWrite(RIGHT, LOW);
-  if (A == 1929) {
+
+  if (A == 1929) { // 1929 tell when can start manual calibration
     play_melody(melody1929,beats1929,sizeof(melody1929)/2);
   }
-  else if (A == 4) {
-    high = -1;
+  else if (A == 1930) { // 1930 indicates new rosbag is being written to
+    digitalWrite(BAG, HIGH);
+    play_melody(melody1930,beats1930,sizeof(melody1930)/2);
+    digitalWrite(BAG, LOW);
+  }
+  else if (A == 30) { // zed found
+    digitalWrite(ZED, HIGH);
+    play_melody(melody30,beats30,sizeof(melody30)/2);
+  }
+  else if (A == 31) { // lidar
+    digitalWrite(LIDAR, HIGH);
+    play_melody(melody31,beats31,sizeof(melody31)/2);
+  }
+  else if (A == 60) { // 60 indicates no zed found yet
+    digitalWrite(ZED, LOW);
+    play_melody(melody60,beats60,sizeof(melody60)/2);
+  }
+  else if (A == 61) { // no lidar
+    digitalWrite(LIDAR, LOW);
+    play_melody(melody61,beats61,sizeof(melody61)/2);
+  }
+  else if (A == 4) { // button 4 reached
+    Serial.println("A==4");
     digitalWrite(LEFT, HIGH);
-    digitalWrite(CENTER, HIGH);
     digitalWrite(RIGHT, HIGH);
-    play_melody(melody4,beats4,sizeof(melody4)/2);
+    //play_melody(melody4,beats4,sizeof(melody4)/2);
   }
-  else if (A == 3) {
-    high = RIGHT;
-    digitalWrite(high,HIGH);
-    play_melody(melody3,beats3,sizeof(melody3)/2);
+  else if (A == 3) { // button 3 reached
+    Serial.println("A==3");
+    digitalWrite(LEFT, LOW);
+    digitalWrite(RIGHT, HIGH);
+    //play_melody(melody3,beats3,sizeof(melody3)/2);
   }
-  else if (A == 2) {
-    high = CENTER;
-    digitalWrite(high,HIGH);
-    play_melody(melody2,beats2,sizeof(melody2)/2);
+  else if (A == 2) { // button 2 reached
+    Serial.println("A==2");
+    digitalWrite(LEFT, HIGH);
+    digitalWrite(RIGHT, HIGH);
+    //play_melody(melody2,beats2,sizeof(melody2)/2);
   }
-  else if (A == 1) {
-    high = LEFT;
-    digitalWrite(high,HIGH);
-    play_melody(melody1,beats1,sizeof(melody1)/2);
+  else if (A == 1) { // button 1 reached
+    Serial.println("A==1");
+    digitalWrite(LEFT, HIGH);
+    digitalWrite(RIGHT, LOW);
+    //play_melody(melody1,beats1,sizeof(melody1)/2);
   }
+
   
-  else if (A == 69) {
-    high = 69;  
-  }
   
 
-  if (high != 69) {
-    if (light_on) {
-      if (high<0) {
-        digitalWrite(LEFT, HIGH);
-        digitalWrite(CENTER, HIGH);
-        digitalWrite(RIGHT, HIGH);      
-      } else {
-        digitalWrite(high,HIGH);
-      }
-    }
-  }
-  
 }
 
 

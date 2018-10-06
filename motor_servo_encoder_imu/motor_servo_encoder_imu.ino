@@ -56,6 +56,10 @@ int servos_attached = 0;
 
 long unsigned int start_time;
 
+int imu_failed = 0;
+
+void encoder_setup();
+
 void setup()
 {
   Serial.begin(115200);
@@ -73,7 +77,6 @@ void setup()
   motor_servo_setup();
   encoder_setup();
   imu_setup();
-  tone_setup();
   start_time = millis();
 }
 
@@ -91,6 +94,9 @@ void motor_servo_setup()
 
   attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(PIN_MOTOR_IN),
     motor_interrupt_service_routine, CHANGE);
+  
+  servo.attach(PIN_SERVO_OUT);
+  motor.attach(PIN_MOTOR_OUT);
   
   while(servo_pwm==0 || motor_pwm==0) {
     delay(200);
@@ -226,7 +232,7 @@ void loop() {
   }
   
   encoder_loop();
-  imu_loop();
+  if (imu_failed == 0) imu_loop();
 }
 
 
@@ -250,14 +256,16 @@ Adafruit_MMA8451 mma = Adafruit_MMA8451();
 void imu_setup()  
 {
   Serial.println("imu_setup()");
-  gyro_setup();
   Serial.println("Adafruit MMA8451 test!");
   if (! mma.begin()) {
-    Serial.println("Couldnt start");
-    while (1);
+    Serial.println("MMA8451 could not start");
+    imu_failed = 1;
+    return;
+    //while (1);
   }
   Serial.println("MMA8451 found!");
-  mma.setRange(MMA8451_RANGE_2_G);  
+  mma.setRange(MMA8451_RANGE_2_G);
+  gyro_setup(); //moved down 10/5/18
 }
 
 
@@ -269,8 +277,14 @@ float ay = 0;
 float az = 0;
 float ctr = 0;
 
+
+
+
+
+
 uint32_t timer = millis();
-void imu_loop() {
+
+void imu_loop__original() {
   /*
   gyro_loop();
    
@@ -313,9 +327,17 @@ void imu_loop() {
     ctr = 0;
     gyro_loop();
   }
-  
+}
 
-
+void imu_loop() {
+  sensors_event_t event; 
+  mma.getEvent(&event);
+  Serial.print("(acc,");
+  Serial.print(event.acceleration.x); Serial.print(",");
+  Serial.print(event.acceleration.y); Serial.print(",");
+  Serial.print(event.acceleration.z); Serial.print(")");
+  Serial.println();
+  gyro_loop();
 }
 
 
@@ -361,6 +383,7 @@ void gyro_setup() {
   setupGyro();
   calibrateGyro();
 }
+
 void gyro_loop() {
   updateGyroValues();
   updateHeadings();
@@ -373,11 +396,9 @@ void gyro_loop() {
   Serial.print(",");
   Serial.print(gyroDPS[2]);
   Serial.println(")");
-  //printDPS();
-  //Serial.print("   -->   ");
   printHeadings2();
-  //Serial.println();
 }
+
 void printDPS()
 {
   Serial.print("DPS X: ");
@@ -530,8 +551,8 @@ int gyroWriteI2C( byte regAddr, byte val){
 ////////////// ENCODER //////////////////
 //PIN's definition
 #include "RunningAverage.h"
-#define encoder0PinA  6
-#define encoder0PinB  7
+#define encoder0PinA  2
+#define encoder0PinB  3
 
 RunningAverage enc_avg(10);
 

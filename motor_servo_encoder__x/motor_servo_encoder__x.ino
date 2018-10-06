@@ -21,7 +21,7 @@
 #define PIN_MOTOR_OUT 8
 #define PIN_CAMERA_OUT 5
 
-//#define A_PIN_SERVO_FEEDBACK 5
+#define A_PIN_SERVO_FEEDBACK 5
 
 
 volatile int button_pwm = 1210;
@@ -96,6 +96,11 @@ void motor_servo_setup()
 
   attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(PIN_MOTOR_IN),
     motor_interrupt_service_routine, CHANGE);
+
+  servo.attach(PIN_SERVO_OUT);
+  motor.attach(PIN_MOTOR_OUT);
+  camera.attach(PIN_CAMERA_OUT);
+
   
   while(servo_pwm==0 || motor_pwm==0) {
     delay(200);
@@ -172,10 +177,16 @@ void loop() {
   
   for( int i = 0; i < num_serial_reads; i = i + 1 ) {
     A = Serial.parseInt();
-    //A = servo_pwm+5000;
+    if (A>0) {
+      //A = servo_pwm+5000;
+      Serial.print("A=");
+      Serial.print(A);
+      Serial.println("");
+    }
     now = millis();
     if (A>500 && A<3000) {
-      servo_command_pwm = A;
+      //servo_command_pwm = A;
+      servo_command_pwm = servo_pwm;
       servo_command_time = now;
     } else if (A>=5000 && A<10000) {
       camera_command_pwm = A-5000;
@@ -187,30 +198,34 @@ void loop() {
       led_command = -A;
     }
   }
+
+  int communiction_control = 0;
   
-  if(now-servo_command_time > max_communication_delay || now-motor_command_time > max_communication_delay || now-camera_command_time > max_communication_delay) {
-    servo_command_pwm = 0;
-    motor_command_pwm = 0;
-    //Serial.println("AAAAA");
-    if(now-servo_command_time > 4*max_communication_delay || now-motor_command_time > 4*max_communication_delay || now-camera_command_time > 4*max_communication_delay) {
-      servo.detach(); 
-      motor.detach(); 
-      camera.detach(); 
-      servos_attached = 0;
-      //Serial.println("BBBBB");     
-    }
-  } else{
-    if(servos_attached==0) {
-      servo.attach(PIN_SERVO_OUT); 
-      motor.attach(PIN_MOTOR_OUT); 
-      camera.attach(PIN_CAMERA_OUT); 
-      servos_attached = 1;
-      //Serial.println("CCCCC");
+  if (communiction_control) {
+    if(now-servo_command_time > max_communication_delay || now-motor_command_time > max_communication_delay || now-camera_command_time > max_communication_delay) {
+      servo_command_pwm = 0;
+      motor_command_pwm = 0;
+      //Serial.println("AAAAA");
+      if(now-servo_command_time > 4*max_communication_delay || now-motor_command_time > 4*max_communication_delay || now-camera_command_time > 4*max_communication_delay) {
+        servo.detach(); 
+        motor.detach(); 
+        camera.detach(); 
+        servos_attached = 0;
+        //Serial.println("BBBBB");     
+      }
+    } else{
+      if(servos_attached==0) {
+        servo.attach(PIN_SERVO_OUT); 
+        motor.attach(PIN_MOTOR_OUT); 
+        camera.attach(PIN_CAMERA_OUT); 
+        servos_attached = 1;
+        //Serial.println("CCCCC");
+      }
     }
   }
   
   encoder_loop();
-
+  //servo.writeMicroseconds(servo_pwm);
   if (millis()-start_time > 1*1000) {
     //Serial.println(millis()-start_time);
     //Serial.println(now-servo_command_time);
@@ -222,9 +237,7 @@ void loop() {
     Serial.print(",");
     Serial.print(motor_pwm);
     Serial.print(",");
-    Serial.print(encoder_value_1);
-    //Serial.print(",");
-    //Serial.print(analogRead(A_PIN_SERVO_FEEDBACK));
+    Serial.print(encoder_value_1);    
     Serial.println(")");
   }
   

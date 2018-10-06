@@ -21,7 +21,7 @@
 #define PIN_MOTOR_OUT 8
 #define PIN_CAMERA_OUT 5
 
-//#define A_PIN_SERVO_FEEDBACK 5
+#define A_PIN_SERVO_FEEDBACK 5
 
 
 volatile int button_pwm = 1210;
@@ -209,12 +209,14 @@ void loop() {
     }
   }
   
+  
   encoder_loop();
 
   if (millis()-start_time > 1*1000) {
     //Serial.println(millis()-start_time);
     //Serial.println(now-servo_command_time);
     //Serial.println(max_communication_delay);
+    
     Serial.print("('mse',");
     Serial.print(button_pwm);
     Serial.print(",");
@@ -222,10 +224,13 @@ void loop() {
     Serial.print(",");
     Serial.print(motor_pwm);
     Serial.print(",");
-    Serial.print(encoder_value_1);
-    //Serial.print(",");
-    //Serial.print(analogRead(A_PIN_SERVO_FEEDBACK));
+    
+    Serial.println(encoder_value_1);
+    
+    Serial.print(",");
+    Serial.print(analogRead(A_PIN_SERVO_FEEDBACK));
     Serial.println(")");
+    
   }
   
   delay(10);
