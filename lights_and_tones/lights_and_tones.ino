@@ -171,25 +171,25 @@ void loop() {
     Serial.println("A==4");
     digitalWrite(LEFT, HIGH);
     digitalWrite(RIGHT, HIGH);
-    //play_melody(melody4,beats4,sizeof(melody4)/2);
+    play_melody(melody4,beats4,sizeof(melody4)/2);
   }
   else if (A == 3) { // button 3 reached
     Serial.println("A==3");
     digitalWrite(LEFT, LOW);
     digitalWrite(RIGHT, HIGH);
-    //play_melody(melody3,beats3,sizeof(melody3)/2);
+    play_melody(melody3,beats3,sizeof(melody3)/2);
   }
   else if (A == 2) { // button 2 reached
     Serial.println("A==2");
     digitalWrite(LEFT, HIGH);
     digitalWrite(RIGHT, HIGH);
-    //play_melody(melody2,beats2,sizeof(melody2)/2);
+    play_melody(melody2,beats2,sizeof(melody2)/2);
   }
   else if (A == 1) { // button 1 reached
     Serial.println("A==1");
     digitalWrite(LEFT, HIGH);
     digitalWrite(RIGHT, LOW);
-    //play_melody(melody1,beats1,sizeof(melody1)/2);
+    play_melody(melody1,beats1,sizeof(melody1)/2);
   }
 
   
