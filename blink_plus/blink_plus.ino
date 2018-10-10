@@ -26,8 +26,10 @@ void setup() {
   // initialize digital pin LED_BUILTIN as an output.
   
   for (int i=0;i<14;i++){
-    pinMode(i, OUTPUT);
+    pinMode(i, OUTPUT);digitalWrite(i,LOW);
   }
+  Serial.begin(115200);
+  Serial.setTimeout(5);
 }
 int t = 1000;
 int i = 0;
@@ -36,7 +38,7 @@ void loop() {
   int level;
 
   level = HIGH;
-
+   Serial.println(i);
    digitalWrite(i, level);   // turn the LED on (HIGH is the voltage level) 
   
   delay(t);
