@@ -1,5 +1,5 @@
-#define MASTER 0
-#define SLAVE 1
+#define MASTER 1
+
 /////////////////////// TONES ///////////////////////////////
 //
 #define  c     3830    // 261 Hz 
@@ -16,20 +16,17 @@ void pinMode_(int p,int o)
 {
   if (MASTER!=0) pinMode(p, o);
 }
-void pinMode__(int p,int o)
-{
-  if (SLAVE!=0) pinMode(p, o);
-}
 void digitalWrite_(int p,int o)
 {
   if (MASTER!=0) digitalWrite(p,o);
 }
+/*
 void digitalWrite__(int p,int o)
 {
-  if (SLAVE!=0) digitalWrite(p,o);
+  if (MASTER==0) digitalWrite(p,o);
 }
-
-int SPEAKER_OUT = 3; // avoid conflict with LED pins below!
+*/
+int SPEAKER_OUT = 9; // avoid conflict with LED pins below!
 
 
 long tempo = 10000;
@@ -42,18 +39,18 @@ long duration  = 0;
 
 int mute = 0;
 
-void playTone(int tone_) {
-  if (SLAVE==0) return;
+void playTone(int tone_,int duration) {
+  if (MASTER==1) return;
   if (mute) return;
   long elapsed_time = 0;
   if (tone_ > 0) { 
 
     while (elapsed_time < duration) {
 
-      digitalWrite__(SPEAKER_OUT,HIGH);
+      digitalWrite(SPEAKER_OUT,HIGH);
       delayMicroseconds(tone_ / 2);
 
-      digitalWrite__(SPEAKER_OUT, LOW);
+      digitalWrite(SPEAKER_OUT, LOW);
       delayMicroseconds(tone_ / 2);
 
       elapsed_time += (tone_);
@@ -63,21 +60,23 @@ void playTone(int tone_) {
     for (int j = 0; j < rest_count; j++) {
       delayMicroseconds(duration);  
     }                                
-  }                                 
+  }
+  
+  //Serial.println(tone_);                           
 }
 
 void play_melody(int melody[],int beats[],int MAX_COUNT) {
-  if (SLAVE==0) return;
+  
+  if (MASTER==1) return;
   for (int i=0; i<MAX_COUNT; i++) {
     tone_ = melody[i];
     beat = beats[i];
 
     duration = beat * tempo;
 
-    playTone(tone_); 
+    playTone(tone_,duration); 
 
     delayMicroseconds(pause);
-    
   }
 }
 int melody51[] = {  C,  b,  g,  C,  b,   R };
@@ -150,7 +149,10 @@ int LIDAR = GREEN;
 int BAG = BLUE;
 //
 //////////////////////////////////////////////////////
-
+const int buttonPin = 2;
+//const int buttonLED = A0;
+long unsigned int button_press_time = millis();
+long unsigned int button_press_time_prev = 0;
 
 #include <Wire.h>
 
@@ -158,27 +160,26 @@ void setup()
 {
   if (MASTER==1){
     Wire.begin(); // join i2c bus (address optional for master)
-  } else if (SLAVE==1){
-      Wire.begin(8);                // join i2c bus with address #8
-      Wire.onReceive(receiveEvent); // register event
-  }
-
-  for (int i=4; i<14;++i){
-    pinMode_(i, OUTPUT);digitalWrite_(i, LOW);
-  }
-  Serial.begin(115200);
-  Serial.setTimeout(5);
-  Serial.println("setup()");
-  pinMode__(SPEAKER_OUT, OUTPUT);
-  for (int i = 0; i < 10; i++)
-  {
-    while (Serial.available() > 0)
-    {
+    for (int i=4; i<14;++i){
+      pinMode_(i, OUTPUT);digitalWrite_(i, LOW);
+    }
+    pinMode(buttonPin,INPUT);
+    //pinMode(buttonLED,OUTPUT);
+    Serial.begin(115200);
+    Serial.setTimeout(5);
+   for (int i = 0; i < 10; i++) {
+    while (Serial.available() > 0) {
      char k = Serial.read();
      delay(1);
     }
     delay(1);
    }
+    Serial.println("Master setup()");    
+  } else if (MASTER==0) {
+      Wire.begin(8);                // join i2c bus with address #8
+      Wire.onReceive(receiveEvent); // register event
+      pinMode(SPEAKER_OUT, OUTPUT);
+  }
 }
 
 
@@ -233,23 +234,27 @@ void loop() {
   if (MASTER==1) {
     A = Serial.parseInt();
     //Serial.println("here1");
-    Wire.beginTransmission(8); // transmit to device #8
-    Wire.write(A);              // sends one byte
-    Wire.endTransmission();
-    //Serial.println("here2");
+    if (mute == 0) {
+      Wire.beginTransmission(8); // transmit to device #8
+      Wire.write(A);              // sends one byte
+      Wire.endTransmission();
+    }
   } else {
     A = AA;
   }
-  if (A == 21) {
-    lights_out = 0;
-  }
-  if (lights_out==1) {
-    for (int i=0; i<14;++i){
-        pinMode_(i, OUTPUT);digitalWrite_(i, LOW);
+  if (MASTER==1) {
+    if (A == 21) {
+      lights_out = 0;
     }
-    delay(100);
-    return;
+    if (lights_out==1) {
+      for (int i=0; i<14;++i){
+          pinMode(i, OUTPUT);digitalWrite(i, LOW);
+      }
+      delay(100);
+      return;
+    }
   }
+ 
   if (A == 51) { // 51 
     play_melody(melody51,beats51,sizeof(melody51)/2);
   }
@@ -302,7 +307,7 @@ void loop() {
   }
   else if (A == 3) { // button 3 reached
     button = 3;
-    play_melody(melody3,beats3,sizeof(melody3)/2);
+    play_melody(melody0,beats0,sizeof(melody0)/2);
   }
   else if (A == 2) { // button 2 reached
     button = 2;
@@ -312,7 +317,7 @@ void loop() {
   }
   else if (A == 1) { // button 1 reached
     button = 1;
-    play_melody(melody1,beats1,sizeof(melody1)/2);
+    play_melody(melody0,beats0,sizeof(melody0)/2);
   }
 
 
@@ -348,15 +353,49 @@ void loop() {
     }
 
     int level = tic_toc(250);
+
     if (button==1) {
       digitalWrite_(LEFT_YELLOW, LOW);
       digitalWrite_(RIGHT_YELLOW, level);
     } else if (button==3) {
       digitalWrite_(LEFT_YELLOW, level);
-      digitalWrite_(RIGHT_YELLOW, LOW);      
+      digitalWrite_(RIGHT_YELLOW, LOW);   
+    }
+    /*
+    if (mute==0 && MASTER==0) {
+      if (button==1) {;
+        digitalWrite(SPEAKER_OUT, level);
+        delayMicroseconds(d / 2);
+        digitalWrite(SPEAKER_OUT, LOW);
+      } else if (button==3) {;
+        digitalWrite(SPEAKER_OUT, level);
+        delayMicroseconds(d / 2);
+        digitalWrite(SPEAKER_OUT, LOW);
+      }
+    }
+    */
+    
+  }
+  /*
+  if (MASTER==1) {
+    if (mute==1) {
+      ;//digitalWrite(buttonLED,HIGH);
+    }
+    else {
+      ;//digitalWrite(buttonLED,LOW);
     }
   }
-  
+  int buttonState = digitalRead(buttonPin);
+  if (buttonState == HIGH){
+    Serial.println("button pressed!");
+    button_press_time_prev = button_press_time;
+    button_press_time = millis();
+    if (button_press_time - button_press_time_prev > 500) {
+      mute = toggle(mute);
+    }
+  }
+  */
+
 }
 
 
