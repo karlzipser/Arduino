@@ -31,13 +31,14 @@ void setup() {
   Serial.begin(115200);
   Serial.setTimeout(5);
 }
-int t = 1000;
-int i = 0;
+int t = 500;
+int i = 2;
 // the loop function runs over and over again forever
 void loop() {
   int level;
 
   level = HIGH;
+   Serial.print("pin ");
    Serial.println(i);
    digitalWrite(i, level);   // turn the LED on (HIGH is the voltage level) 
   
@@ -49,5 +50,5 @@ void loop() {
                         // wait for a second
   delay(t);
   i++;
-  if (i>13) i = 0;
+  if (i>13) i = 2;
 }
