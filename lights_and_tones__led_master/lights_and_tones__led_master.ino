@@ -1,8 +1,8 @@
 /////////////////////// LIGHTS ///////////////////////////////
 //
 
-int LEFT_YELLOW = 9;
-int RIGHT_YELLOW = 12;
+int RIGHT_YELLOW = 9;
+int LEFT_YELLOW = 12;
 int BLUE = 5;
 int WHITE = 7;
 int PURPLE = 4;
@@ -22,10 +22,10 @@ int mute = 0;
 int human_driver = 1;
 int AA;
 
-const int buttonPin = 2;
-const int buttonLED = A0;
-long unsigned int button_press_time = millis();
-long unsigned int button_press_time_prev = 0;
+//const int buttonPin = 2;
+//const int buttonLED = A0;
+//long unsigned int button_press_time = millis();
+//long unsigned int button_press_time_prev = 0;
 
 #include <Wire.h>
 
@@ -51,10 +51,10 @@ void setup()
     for (int i=4; i<14;++i){
       pinMode(i, OUTPUT);digitalWrite(i, LOW);
     }
-    pinMode(buttonPin,INPUT);
-    pinMode(buttonLED,OUTPUT);
+    //pinMode(buttonPin,INPUT);
+    //pinMode(buttonLED,OUTPUT);
     begin_serial();
-    Serial.println("Master setup()");    
+    Serial.println("lights_and_tones__led_master.ino setup()");    
 }
 
 
@@ -153,8 +153,8 @@ void loop() {
   else if (A == 4) { // button 4 reached
     button = 4;
     Serial.println("A==4");
-    digitalWrite(LEFT_YELLOW, LOW);
     digitalWrite(RIGHT_YELLOW, LOW);
+    digitalWrite(LEFT_YELLOW, LOW);
     digitalWrite(LEFT_RED, LOW);
     digitalWrite(RIGHT_RED, LOW);
     digitalWrite(LEFT_GREEN, LOW);
@@ -166,8 +166,8 @@ void loop() {
   }
   else if (A == 2) { // button 2 reached
     button = 2;
-    digitalWrite(LEFT_YELLOW, LOW);
     digitalWrite(RIGHT_YELLOW, LOW);
+    digitalWrite(LEFT_YELLOW, LOW);
   }
   else if (A == 1) { // button 1 reached
     button = 1;
@@ -201,23 +201,25 @@ void loop() {
     int level = tic_toc(250);
 
     if (button==1) {
-      digitalWrite(LEFT_YELLOW, LOW);
-      digitalWrite(RIGHT_YELLOW, level);
-    } else if (button==3) {
+      digitalWrite(RIGHT_YELLOW, LOW);
       digitalWrite(LEFT_YELLOW, level);
-      digitalWrite(RIGHT_YELLOW, LOW);   
+    } else if (button==3) {
+      digitalWrite(RIGHT_YELLOW, level);
+      digitalWrite(LEFT_YELLOW, LOW);   
     }    
   }
 
+  /*
   if (mute==1) {
     digitalWrite(buttonLED,HIGH);
   }
   else {
     digitalWrite(buttonLED,LOW);
   }
-  
-  int buttonState = digitalRead(buttonPin);
+  */
+  //int buttonState = digitalRead(buttonPin);
 
+  /*
   if (buttonState == HIGH){
     Serial.println("button being pressed!");
     button_press_time_prev = button_press_time;
@@ -225,7 +227,7 @@ void loop() {
     if (button_press_time - button_press_time_prev > 500) {
       mute = toggle(mute);
     }
-  }
+  }*/
 }
 
 
